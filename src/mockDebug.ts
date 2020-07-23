@@ -12,6 +12,7 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { basename } from 'path';
 import { MockRuntime, MockBreakpoint } from './mockRuntime';
+import { window, ProgressLocation } from 'vscode';
 const { Subject } = require('await-notify');
 
 function timeout(ms: number) {
@@ -196,7 +197,21 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			breakpoints: actualBreakpoints
 		};
-		this.sendResponse(response);
+
+		const sendResponse = () => this.sendResponse(response);
+
+		const options = {
+			location: ProgressLocation.Notification,
+			title: 'Delaying setBreakpoint response...',
+		};
+		window.withProgress(options, () => {
+			return new Promise(resolve => {
+				setTimeout(() => {
+					sendResponse();
+					resolve();
+				}, 5000)
+			});
+		});
 	}
 
 	protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, request?: DebugProtocol.Request): void {
